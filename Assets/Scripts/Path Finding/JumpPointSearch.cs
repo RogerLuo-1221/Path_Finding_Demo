@@ -46,7 +46,6 @@ namespace Path_Finding
                 if (curNode == _targetNode)
                 {
                     grid.RetracePath(_startNode, _targetNode);
-
                     return;
                 }
 
@@ -57,27 +56,28 @@ namespace Path_Finding
 
                     var jumpPoint = GetJumpPoint(r, c, curNode.DirectionTo(neighbor));
                     
-                    if (jumpPoint == null || closeSet.Contains(jumpPoint)) continue;
+                    if (jumpPoint == null || closeSet.Contains(jumpPoint))
+                        continue;
 
                     var costToJumpPoint = curNode.gCost + curNode.DistanceTo(jumpPoint);
 
-                    if (!openSet.Contains(jumpPoint) || costToJumpPoint < jumpPoint.gCost)
+                    if (openSet.Contains(jumpPoint) && costToJumpPoint >= jumpPoint.gCost)
+                        continue;
+                    
+                    jumpPoint.gCost = costToJumpPoint;
+                    jumpPoint.parent = curNode;
+
+                    if (!openSet.Contains(jumpPoint))
                     {
-                        jumpPoint.gCost = costToJumpPoint;
-                        jumpPoint.parent = curNode;
-
-                        if (!openSet.Contains(jumpPoint))
-                        {
-                            jumpPoint.hCost = jumpPoint.DistanceTo(_targetNode);
+                        jumpPoint.hCost = jumpPoint.DistanceTo(_targetNode);
                             
-                            openSet.Add(jumpPoint);
+                        openSet.Add(jumpPoint);
 
-                            retraceOpenSet.Add(jumpPoint);
-                        }
-                        else
-                        {
-                            openSet.Update(jumpPoint);
-                        }
+                        retraceOpenSet.Add(jumpPoint);
+                    }
+                    else
+                    {
+                        openSet.Update(jumpPoint);
                     }
                 }
             }
@@ -121,6 +121,7 @@ namespace Path_Finding
 
                 if (rDirection != 0 && cDirection != 0)
                 {
+                    // Add neighbors in jumping direction
                     if (grid.NodeWalkable(r + rDirection, c))
                         neighbors.Add(grid.GetNode(r + rDirection, c));
                     
@@ -131,9 +132,10 @@ namespace Path_Finding
                         grid.NodeWalkable(r + rDirection, c + cDirection))
                         neighbors.Add(grid.GetNode(r + rDirection, c + cDirection));
                     
+                    // Add forced neighbors to neighbors
                     if (!grid.NodeWalkable(r, c - cDirection) &&
                         grid.NodeWalkable(r + rDirection, c) &&
-                        grid.NodeWalkable(r + rDirection, c + cDirection))
+                        grid.NodeWalkable(r + rDirection, c - cDirection))
                         neighbors.Add(grid.GetNode(r + rDirection, c - cDirection));
                     
                     if (!grid.NodeWalkable(r - rDirection, c) &&
@@ -143,9 +145,11 @@ namespace Path_Finding
                 }
                 else if (rDirection != 0)
                 {
+                    // Add neighbors in jumping direction
                     if (grid.NodeWalkable(r + rDirection, c))
                         neighbors.Add(grid.GetNode(r + rDirection, c));
                     
+                    // Add forced neighbors to neighbors
                     if (!grid.NodeWalkable(r, c + 1) &&
                         grid.NodeWalkable(r + rDirection, c + 1))
                         neighbors.Add(grid.GetNode(r + rDirection, c + 1));
@@ -156,9 +160,11 @@ namespace Path_Finding
                 }
                 else if (cDirection != 0)
                 {
+                    // Add neighbors in jumping direction
                     if (grid.NodeWalkable(r, c + cDirection))
                         neighbors.Add(grid.GetNode(r, c + cDirection));
                     
+                    // Add forced neighbors to neighbors
                     if (!grid.NodeWalkable(r + 1, c) &&
                         grid.NodeWalkable(r + 1, c + cDirection))
                         neighbors.Add(grid.GetNode(r + 1, c + cDirection));
@@ -171,47 +177,63 @@ namespace Path_Finding
 
             return neighbors;
         }
-        
+
         private Node GetJumpPoint(int r, int c, (int, int) direction)
         {
-            if (!grid.NodeWalkable(r, c))
-                return null;
-
-            if (r == _targetNode.gridR && c == _targetNode.gridC)
-                return _targetNode;
-
-            var (rDirection, cDirection) = direction;
-
-            if (rDirection != 0 && cDirection != 0)
+            while (true)
             {
-                if (!grid.NodeWalkable(r + rDirection, c) && !grid.NodeWalkable(r, c + cDirection))
+                if (!grid.NodeWalkable(r, c))
                     return null;
 
-                if (grid.NodeWalkable(r + rDirection, c - cDirection) && !grid.NodeWalkable(r, c - cDirection) ||
-                    grid.NodeWalkable(r - rDirection, c + cDirection) && !grid.NodeWalkable(r - rDirection, c) ||
-                    GetJumpPoint(r, c, (rDirection, 0)) != null || GetJumpPoint(r, c, (0, cDirection)) != null)
-                    return grid.GetNode(r, c);
-            }
-            else if (rDirection != 0)
-            {
-                if (!grid.NodeWalkable(r + rDirection, c))
-                    return null;
+                if (r == _targetNode.gridR && c == _targetNode.gridC)
+                    return _targetNode;
 
-                if (grid.NodeWalkable(r + rDirection, c + 1) && !grid.NodeWalkable(r, c + 1) ||
-                    grid.NodeWalkable(r + rDirection, c - 1) && !grid.NodeWalkable(r, c - 1))
-                    return grid.GetNode(r, c);
-            }
-            else if (cDirection != 0)
-            {
-                if (!grid.NodeWalkable(r, c + cDirection))
-                    return null;
+                var (rDirection, cDirection) = direction;
 
-                if (grid.NodeWalkable(r + 1, c + cDirection) && !grid.NodeWalkable(r + 1, c) ||
-                    grid.NodeWalkable(r - 1, c + cDirection) && !grid.NodeWalkable(r - 1, c))
-                    return grid.GetNode(r, c);
-            }
+                if (rDirection != 0 && cDirection != 0)
+                {
+                    // Check moving direction
+                    if (!grid.NodeWalkable(r + rDirection, c) && !grid.NodeWalkable(r, c + cDirection))
+                        return null;
+                    
+                    // Check forced neighbors
+                    if (grid.NodeWalkable(r + rDirection, c - cDirection) && !grid.NodeWalkable(r, c - cDirection) ||
+                        grid.NodeWalkable(r - rDirection, c + cDirection) && !grid.NodeWalkable(r - rDirection, c))
+                        return grid.GetNode(r, c);
+                    
+                    // Check if horizontal/vertical direction has jump point
+                    if (GetJumpPoint(r, c, (rDirection, 0)) != null ||
+                        GetJumpPoint(r, c, (0, cDirection)) != null)
+                        return grid.GetNode(r, c);
+                }
+                else if (rDirection != 0)
+                {
+                    // Prevent moving diagonally left/right
+                    // with barriers forward and on the left/right
+                    if (!grid.NodeWalkable(r + rDirection, c))
+                        return null;
+                    
+                    // Check forced neighbors
+                    if (grid.NodeWalkable(r + rDirection, c + 1) && !grid.NodeWalkable(r, c + 1) ||
+                        grid.NodeWalkable(r + rDirection, c - 1) && !grid.NodeWalkable(r, c - 1))
+                        return grid.GetNode(r, c);
+                }
+                else if (cDirection != 0)
+                {
+                    // Prevent moving diagonally left/right
+                    // with barriers forward and on the left/right
+                    if (!grid.NodeWalkable(r, c + cDirection))
+                        return null;
+                    
+                    // Check forced neighbors
+                    if (grid.NodeWalkable(r + 1, c + cDirection) && !grid.NodeWalkable(r + 1, c) ||
+                        grid.NodeWalkable(r - 1, c + cDirection) && !grid.NodeWalkable(r - 1, c))
+                        return grid.GetNode(r, c);
+                }
 
-            return GetJumpPoint(r + rDirection, c + cDirection, direction);
+                r += rDirection;
+                c += cDirection;
+            }
         }
     }
 }

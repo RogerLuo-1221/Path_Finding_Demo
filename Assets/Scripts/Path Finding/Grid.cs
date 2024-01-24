@@ -56,37 +56,6 @@ namespace Path_Finding
             return _grid[posR, posC];
         }
 
-        public List<Node> GetNeighbors(Node node)
-        {
-            var neighbors = new List<Node>();
-
-            for (var r = -1; r <= 1; r++)
-            {
-                for (var c = -1; c <= 1; c++)
-                {
-                    if (r == 0 && c == 0) continue;
-                    
-                    if (r != 0 && c != 0)
-                    {
-                        if ((NodeWalkable(node.gridR + r, node.gridC) || NodeWalkable(node.gridR, node.gridC + c)) 
-                            && NodeWalkable(node.gridR + r, node.gridC + c))
-                        {
-                            neighbors.Add(_grid[node.gridR + r, node.gridC + c]);
-                        }
-                    }
-                    else
-                    {
-                        if (NodeWalkable(node.gridR + r, node.gridC + c))
-                        {
-                            neighbors.Add(_grid[node.gridR + r, node.gridC + c]);
-                        }
-                    }
-                }
-            }
-
-            return neighbors;
-        }
-
         public bool NodeWalkable(int r, int c) => NodeInBoundary(r, c) && _grid[r, c].walkable;
 
         private bool NodeInBoundary(int r, int c) => r >= 0 && r < rowCount && c >= 0 && c < colCount;

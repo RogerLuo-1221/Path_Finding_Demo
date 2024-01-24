@@ -51,14 +51,11 @@ namespace Utils
             while (true)
             {
                 var parentItem = _items[parentIndex];
-                if (item.CompareTo(parentItem) > 0)
-                {
-                    Swap (item,parentItem);
-                }
+                
+                if (item.CompareTo(parentItem) < 0)
+                    Swap(item,parentItem);
                 else
-                {
                     break;
-                }
 
                 parentIndex = (item.HeapIndex - 1) / 2;
             }
@@ -75,27 +72,16 @@ namespace Utils
                 {
                     var swapIndex = childIndexLeft;
 
-                    if (childIndexRight < Count)
-                    {
-                        if (_items[childIndexLeft].CompareTo(_items[childIndexRight]) < 0)
-                        {
+                    if (childIndexRight < Count && _items[childIndexLeft].CompareTo(_items[childIndexRight]) > 0)
                             swapIndex = childIndexRight;
-                        }
-                    }
 
-                    if (item.CompareTo(_items[swapIndex]) < 0)
-                    {
-                        Swap (item,_items[swapIndex]);
-                    }
+                    if (item.CompareTo(_items[swapIndex]) > 0)
+                        Swap(item,_items[swapIndex]);
                     else
-                    {
                         return;
-                    }
                 }
                 else
-                {
                     return;
-                }
             }
         }
 
@@ -107,11 +93,11 @@ namespace Utils
             (itemA.HeapIndex, itemB.HeapIndex) = (itemB.HeapIndex, itemA.HeapIndex);
         }
     }
-    
+
     public abstract class HeapItem<T> : IComparable<T>
     {
-        public abstract int HeapIndex { get; set; }
-        
+        public int HeapIndex { get; set; }
+
         public abstract int CompareTo(T other);
     }
 }

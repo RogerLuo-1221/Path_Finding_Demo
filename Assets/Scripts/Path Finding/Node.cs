@@ -43,8 +43,6 @@ namespace Path_Finding
             
             return (rDirection, cDirection);
         }
-    
-        public override int HeapIndex { get; set; }
 
         public override int CompareTo(Node node)
         {
@@ -53,7 +51,7 @@ namespace Path_Finding
             if (compare == 0)
                 compare = hCost.CompareTo(node.hCost);
 
-            return -compare;
+            return compare;
         }
     }
 }
